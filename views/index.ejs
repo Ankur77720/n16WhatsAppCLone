@@ -17,9 +17,14 @@
             <h3><%= loggedInUser.username %></h3>
           </div>
 
-          <button onclick="createNewGroup()">
-            <i class="ri-add-line"> </i>
-          </button>
+          <div style="display: flex; gap: 16px;">
+
+            <button id="joinGroupButton" onclick="joinGroup()">
+              <i class="ri-user-add-line"></i> </button>
+            <button onclick="createNewGroup()">
+              <i class="ri-add-line"> </i>
+            </button>
+          </div>
 
         </div>
       </div>
@@ -85,6 +90,12 @@
       outgoingMessage(message)
       document.querySelector('.right .bottom input').value = ""
 
+      console.log({
+        message,
+        receiver: currentChatUser,
+        sender: `<%= loggedInUser.username %>`
+      })
+      
       socket.emit('private-message', {
         message,
         receiver: currentChatUser,
@@ -140,7 +151,10 @@
 
     function createNewGroup() {
       const groupName = prompt("Enter group name")
-/* groupName = insta */
+      if (!groupName) {
+        return
+      }
+      /* groupName = insta */
       socket.emit("create-new-group", {
         sender /* loggedInUser */ ,
         groupName
@@ -151,6 +165,19 @@
     socket.on('group-created', newGroup => {
       appendChat(newGroup.profileImage, newGroup.name)
     })
+
+    socket.on("group-joined", groupDetails => {
+      appendChat(groupDetails.profileImage, groupDetails.name)
+
+    })
+
+    function joinGroup() {
+      const groupName = prompt("enter group name to join")
+      socket.emit('join-group', {
+        groupName,
+        sender /* loggedInUser */
+      })
+    }
   </script>
 
 </body>

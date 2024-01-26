@@ -27,14 +27,22 @@ io.on("connection", function (socket) {
             }
         })
 
-        console.log(allGroups)
+        allGroups.forEach(group => {
+            socket.emit('group-joined', group)
+        })
+
+
+
+
+
+
+
 
         await user.findOneAndUpdate({
             username: userDetails.username
         }, {
             socketId: socket.id
         })
-
 
 
         const onlineUsers = await user.find({
@@ -78,7 +86,38 @@ io.on("connection", function (socket) {
             username: messageObject.receiver
         })
 
-        socket.to(receiver.socketId).emit('receive-private-message', messageObject)
+        if (!receiver) {
+            /* 
+            jab receiver nhi milege
+             */
+
+            const group = await groupModel.findOne({
+                name: messageObject.receiver
+            }).populate('users')
+
+            
+            if (!group) {
+
+                /* 
+                agar group nhi mila
+                 */
+                
+                return
+            }
+
+            console.log(group)
+
+            /* send message to users in group */
+
+
+
+
+        }
+
+
+
+        if (receiver)
+            socket.to(receiver.socketId).emit('receive-private-message', messageObject)
     })
 
     socket.on("fetch-conversation", async conversationDetails => {
@@ -120,6 +159,26 @@ io.on("connection", function (socket) {
         await newGroup.save()
 
         socket.emit("group-created", newGroup)
+    })
+
+    socket.on("join-group", async joiningDetails => {
+        const group = await groupModel.findOne({
+            name: joiningDetails.groupName
+        })
+
+        const currentUser = await user.findOne({
+            username: joiningDetails.sender
+        })
+
+        group.users.push(currentUser._id)
+
+        await group.save()
+
+        socket.emit('group-joined', {
+            profileImage: group.profileImage,
+            name: group.name
+        })
+
     })
 
 
