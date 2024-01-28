@@ -76,6 +76,9 @@ io.on("connection", function (socket) {
 
     socket.on('private-message', async messageObject => {
 
+        console.log(messageObject)
+
+
         await messageModel.create({
             msg: messageObject.message,
             sender: messageObject.sender,
@@ -83,8 +86,10 @@ io.on("connection", function (socket) {
         })
 
         const receiver = await user.findOne({
-            username: messageObject.receiver
+            username: messageObject.receiver /* insta */
         })
+
+        /* receiver = null */
 
         if (!receiver) {
             /* 
@@ -92,20 +97,24 @@ io.on("connection", function (socket) {
              */
 
             const group = await groupModel.findOne({
-                name: messageObject.receiver
+                name: messageObject.receiver /* insta */
             }).populate('users')
 
-            
+
             if (!group) {
 
                 /* 
                 agar group nhi mila
                  */
-                
+
                 return
             }
 
-            console.log(group)
+            group.users.forEach(user => {
+                socket.to(user.socketId).emit("receive-private-message", messageObject)
+            })
+
+
 
             /* send message to users in group */
 
@@ -128,21 +137,37 @@ io.on("connection", function (socket) {
             receiver
         } */
 
-
-        const allMessages = await messageModel.find({
-            $or: [
-                {
-                    sender: conversationDetails.sender /* a */,
-                    receiver: conversationDetails.receiver /* b */,
-                },
-                {
-                    receiver: conversationDetails.sender /* a */,
-                    sender: conversationDetails.receiver /* b */,
-                }
-            ]
+        const isUser = await user.findOne({
+            username: conversationDetails.receiver /* insta */
         })
 
-        socket.emit('send-conversation', allMessages)
+        /* isUser = null */
+
+        if (isUser) {
+
+
+            const allMessages = await messageModel.find({
+                $or: [
+                    {
+                        sender: conversationDetails.sender /* a */,
+                        receiver: conversationDetails.receiver /* b */,
+                    },
+                    {
+                        receiver: conversationDetails.sender /* a */,
+                        sender: conversationDetails.receiver /* b */,
+                    }
+                ]
+            })
+
+            socket.emit('send-conversation', allMessages)
+        }
+        else {
+            const allMessages = await messageModel.find({
+                receiver: conversationDetails.receiver /* insta */
+            })
+
+            socket.emit('send-conversation', allMessages)
+        }
 
     })
 

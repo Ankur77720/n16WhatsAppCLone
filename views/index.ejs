@@ -95,11 +95,12 @@
         receiver: currentChatUser,
         sender: `<%= loggedInUser.username %>`
       })
-      
+
       socket.emit('private-message', {
         message,
         receiver: currentChatUser,
-        sender: `<%= loggedInUser.username %>`
+        /* insta */
+        sender: `<%= loggedInUser.username %>` /* a */
       })
 
     }
@@ -132,7 +133,8 @@
       document.querySelector("#currentChatUser h3").textContent = username
       socket.emit('fetch-conversation', {
         receiver: username,
-        sender: sender
+        /* insta */
+        sender: sender /* a */
       })
 
     }
